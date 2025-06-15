@@ -1,0 +1,236 @@
+<?php
+include './db/database.php';
+
+if (isset($_POST['submit'])) {
+    $first_name = mysqli_real_escape_string($conn, $_POST['first_name']);
+    $last_name = mysqli_real_escape_string($conn, $_POST['last_name']);
+    $email = mysqli_real_escape_string($conn, $_POST['email']);
+    $address = mysqli_real_escape_string($conn, $_POST['address']);
+    $number = mysqli_real_escape_string($conn, $_POST['number']);
+    $password = mysqli_real_escape_string($conn, md5($_POST['password']));
+    $cpass = mysqli_real_escape_string($conn, md5($_POST['cpassword']));
+    $user_type = $_POST['user_type'];
+    $image = $_FILES['image']['name'];
+    $image_size = $_FILES['image']['size'];
+    $image_tmp_name = $_FILES['image']['tmp_name'];
+    $image_folder = 'images/' . $image;
+
+    $select_users = mysqli_query($conn, "SELECT * FROM `users` WHERE email = '$email'") or die('query failed');
+
+    if (mysqli_num_rows($select_users) > 0) {
+        $message[] = 'User already exists!';
+    } else {
+        if ($password != $cpass) {
+            $message[] = 'Confirm password does not match!';
+        } elseif ($image_size > 500000000) {
+            $message[] = 'Image size is too large!';
+        } else {
+        
+            $insert_query = "INSERT INTO `users` (first_name, last_name, email, address, number, password, image,user_type) VALUES('$first_name', '$last_name', '$email', '$address', '$number', '$password', '$image', '$user_type')";
+            mysqli_query($conn, $insert_query) or die('Query failed: ' . mysqli_error($conn));          
+            $message[] = 'Registered successfully!';
+            header('location:login.php');
+           
+            
+        }
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Animated Login Form</title>
+
+    <link href="https://fonts.googleapis.com/css?family=Poppins:600&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/a81368914c.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="newcss/styles.css">
+</head>
+<style>
+        .toggle-password {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #999;
+            z-index: 1;
+        }
+        .div {
+            position: relative;
+        }
+    </style>
+<body>
+    <img class="wave" src="images/Volunteering-cuate.png">
+    <div class="container">
+        <div class="img">
+            <img src="">
+        </div>
+        <div class="login-content">
+
+            <form method="post" enctype="multipart/form-data">
+                <img src="https://raw.githubusercontent.com/sefyudem/Responsive-Login-Form/master/img/avatar.svg">
+                <h2 class="title">Welcome</h2>
+
+                <?php
+                    if (isset($message)) {
+                        foreach ($message as $msg) {
+                            echo '
+                                <div class="message">
+                                    <span>' . $msg . '</span>
+                                    <i class="fas fa-times" onclick="this.parentElement.remove();"></i>
+                                </div>
+                            ';
+                        }
+                    }
+                ?>
+
+                <div class="input-div one">
+                    <div class="i">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="div">
+                        <h5>Firstname</h5>
+                        <input type="text" class="input" name="first_name" required>
+                    </div>
+                </div>
+
+                <div class="input-div one">
+                    <div class="i">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="div">
+                        <h5>Lastname</h5>
+                        <input type="text" class="input" name="last_name" required>
+                    </div>
+                </div>
+
+                <div class="input-div one" style="color:#555;">
+                <i class="fas fa-users"></i>
+                    <div class="div">
+                        <select
+                            style="
+                                width: 311px;
+                                outline: none;
+                                border: none;
+                                font-weight: 700;
+                                color: rgba(0,0,0,.4);
+                            " name="user_type">
+                            <option selected disabled>Select user type</option>
+                            <option value="collector">Collector</option>
+                            <option value="customer">Customer</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-div one">
+                    <div class="i">
+                    <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="div">
+                        <h5>Email</h5>
+                        <input type="email" class="input" name="email" required>
+                    </div>
+                </div>
+
+                <div class="input-div one">
+                    <div class="i">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <div class="div">
+                        <h5>Phone Number</h5>
+                        <input type="text" class="input" name="number" required>
+                    </div>
+                </div>
+
+                <div class="input-div one">
+                    <div class="i">
+                        <i class="fas fa-address-book"></i>
+                    </div>
+                    <div class="div">
+                        <h5>Address</h5>
+                        <input type="text" class="input" name="address" placeholder="" required>
+                        <h5 style=" position: absolute; font-size: 10px;
+                        top: 133%;
+                        font-style: italic;
+                        color: #ccc;">Ex. Poblacion Buenavista Bohol</h5>
+                    </div>
+                </div>
+                <div class="input-div pass">
+                    <div class="i"><i class="fas fa-lock"></i></div>
+                    <div class="div">
+                        <h5>Password</h5>
+                        <input type="password" class="input password-field" name="password" required>
+                        <span class="toggle-password"><i class="far fa-eye"></i></span>
+                    </div>
+                </div>
+
+                <div class="input-div pass">
+                    <div class="i"><i class="fas fa-lock"></i></div>
+                    <div class="div">
+                        <h5>Confirm Password</h5>
+                        <input type="password" class="input password-field" name="cpassword" required>
+                        <span class="toggle-password"><i class="far fa-eye"></i></span>
+                    </div>
+                </div>
+
+                <div class="input-div one" style="opacity:0">
+                    <div class="i">
+                        <i class="fas fa-image"></i>
+                    </div>
+                    <div class="div" >
+                        <h5>Image</h5>
+                        <input type="file" class="input" name="image">
+                    </div>
+                </div>
+
+                <button type="submit" name="submit" class="btn">Register</button>
+
+                <p style=" text-align: center;
+                    margin-top: 10px; display: flex; align-items: center; justify-content: center;">Already have an account? <a href="login.php" style="margin-left:5px; color:rgb(74, 231, 87); text-decoration: none; font-weight: bold;" >Login</a>
+                </p>
+
+            </form>
+        </div>
+    </div>
+</body>
+<script>
+    const inputs = document.querySelectorAll(".input");
+
+    function addcl(){
+        let parent = this.parentNode.parentNode;
+        parent.classList.add("focus");
+    }
+
+    function remcl(){
+        let parent = this.parentNode.parentNode;
+        if(this.value == ""){
+            parent.classList.remove("focus");
+        }
+    }
+
+    inputs.forEach(input => {
+        input.addEventListener("focus", addcl);
+        input.addEventListener("blur", remcl);
+    });
+
+    // Password toggle functionality
+    document.querySelectorAll('.toggle-password').forEach(icon => {
+        icon.addEventListener('click', function () {
+            const input = this.previousElementSibling;
+            const eye = this.querySelector('i');
+
+            if (input.type === "password") {
+                input.type = "text";
+                eye.classList.remove('fa-eye');
+                eye.classList.add('fa-eye-slash');
+            } else {
+                input.type = "password";
+                eye.classList.remove('fa-eye-slash');
+                eye.classList.add('fa-eye');
+            }
+        });
+    });
+</script>
+</html>
