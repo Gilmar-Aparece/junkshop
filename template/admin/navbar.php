@@ -45,7 +45,7 @@ if (mysqli_num_rows($select) > 0) {
                       <a href="loan-plan.php" class="nav-link">	<i class="typcn typcn-home-outline"></i> Loan Plan</a>
                       <a href="loan-type.php" class="nav-link"><i class="typcn typcn-document-text"></i> Loan Type</a>
                       <a href="payment-list.php" class="nav-link"><i class="typcn typcn-credit-card"></i> Payment List</a>
-                      <a href="add-collector.php" class="nav-link"><i class="typcn typcn-user"></i> Add Collector</a>
+                      
                     </nav>
                   </div>
                 </div><!-- container -->
@@ -61,6 +61,9 @@ if (mysqli_num_rows($select) > 0) {
             </li>
             <li class="nav-item">
               <a href="documentation.php" class="nav-link"><i class="typcn typcn-chart-bar-outline"></i> Documentation</a>
+            </li>
+            <li class="nav-item">
+              <a href="add-collector.php" class="nav-link"><i class="typcn typcn-user"></i> Add Collector</a>
             </li>
             <!-- <li class="nav-item">
               <a href="adminlist.php" class="nav-link"><i class="typcn typcn-book"></i> User</a>

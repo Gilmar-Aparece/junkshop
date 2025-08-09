@@ -75,7 +75,7 @@ $unread_query = mysqli_query($conn, "
             </div>
             <ul class="nav">
                 <li class="nav-item"><a href="index.php" class="nav-link"><i class="typcn typcn-chart-area-outline"></i> Home</a></li>
-                <li class="nav-item"><a href="pricing.php" class="nav-link"><i class="typcn typcn-document"></i> Junk Pricing</a></li>
+                <li class="nav-item"><a href="pricing.php" class="nav-link"><i class="typcn typcn-document"></i> Scrap Pricing</a></li>
                 <li class="nav-item">
                     <a href="#" class="nav-link with-sub"><i class="typcn typcn-attachment-outline"></i> Loan</a>
                     <div class="az-menu-sub">

@@ -121,7 +121,7 @@ if (!$data) {
             </div>
 
             <div class="receipt-row">
-                <div class="label">Junk Type:</div>
+                <div class="label">Scrap Type:</div>
                 <div class="value"><?= htmlspecialchars($data['junk_type']) ?></div>
             </div>
 

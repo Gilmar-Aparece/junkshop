@@ -188,8 +188,9 @@ $query = mysqli_query($conn, "
     <tr>
       <th>#</th>
       <th>Customer</th>
-      <th>Junk Category</th>
-      <th>Junk Kg</th>
+      <th>Scrap Category</th>
+      <th>Scrap Kg</th>
+      <th>Scrap Paid/Unpaid</th>
       <th>Action</th>
     </tr>
   </thead>
@@ -203,6 +204,7 @@ $query = mysqli_query($conn, "
             $image = !empty($row['image']) ? htmlspecialchars($row['image']) : '1.png';
             $junk_type = htmlspecialchars($row['junk_type']);
             $desc = htmlspecialchars($row['kl']);
+            $paid = htmlspecialchars($row['paid']);
             $address = htmlspecialchars($row['address']);
             $contact = htmlspecialchars($row['contact_number']);
             $date =  date("M j, Y", strtotime($row['preferred_date']));
@@ -216,6 +218,7 @@ $query = mysqli_query($conn, "
               </td>
               <td><?= $junk_type ?></td>
               <td><?= $desc ?></td>
+              <td><?= $paid?></td>
               <td>
                 <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#modal<?= $pickup_id ?>">
                   View
@@ -236,15 +239,18 @@ $query = mysqli_query($conn, "
                       <img src="images/<?= $image ?>" alt="Customer Image" style="width:50px; height:50px; border-radius:50%; object-fit:cover; margin-right:10px;">
                       <strong><?= $full_name ?></strong>
                     </div>
-                    <p><strong>Junk Category:</strong> <?= $junk_type ?></p>
-                    <p><strong>Junk Kg:</strong> <?= $desc ?></p>
+                    <p><strong>Scrap Category:</strong> <?= $junk_type ?></p>
+                    <p><strong>Scrap Kg:</strong> <?= $desc ?></p>
                     <p><strong>Address:</strong> <?= $address ?></p>
+                    <p><strong>Paid Amount:</strong> <?= $paid ?></p>
                     <p><strong>Contact Number:</strong> <?= $contact ?></p>
                     <p><strong>Preferred Date:</strong> <?= $date ?></p>
                     <p><strong>Status:</strong> <span class="badge bg-success"><?= $row['status'] ?></span></p>
+                    
                   </div>
                   <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    
                   </div>
                 </div>
               </div>

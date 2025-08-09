@@ -61,8 +61,14 @@ if (isset($_POST['decline_request'])) {
 
 if (isset($_POST['complete_request'])) {
   $request_id = (int) $_POST['request_id'];
-  $paid = (float) mysqli_real_escape_string($conn, $_POST['paid']);
-  $kl = mysqli_real_escape_string($conn, $_POST['kl']);
+  $weights = $_POST['weights'] ?? [];
+  $paid = (float) $_POST['paid'];
+
+  $kl_str = [];
+  foreach ($weights as $type => $weight) {
+    $kl_str[] = $type . ':' . $weight;
+  }
+  $kl_final = implode(', ', $kl_str);
 
   // Get collector ID
   $pickup_request = mysqli_fetch_assoc(mysqli_query($conn, "SELECT customer_id, collector_id FROM pickup_requests WHERE id = $request_id"));
@@ -217,12 +223,12 @@ if (isset($_POST['complete_request'])) {
 
   // Step 1: Update pickup_requests
   $update_sql = "UPDATE pickup_requests 
-                 SET status = 'Completed', 
-                     paid = '$paid', 
-                     kl = '$kl', 
-                     paid_at = NOW() 
-                 WHERE id = $request_id";
-  mysqli_query($conn, $update_sql);
+  SET status = 'Completed', 
+      paid = '$paid', 
+      kl = '$kl_final', 
+      paid_at = NOW() 
+  WHERE id = $request_id";
+mysqli_query($conn, $update_sql);
 
   // Step 2: Update deduction in total_money
   $update_deduction_sql = "UPDATE total_money 
@@ -415,8 +421,8 @@ if (isset($_POST['add_documentation'])) {
                 <th>Name</th>
                 <th>Contact</th>
                 <th>Address</th>
-                <th>Junk Type</th>
-                <th>Garbage Kg/G</th>
+                <th>Scrap Type</th>
+                <th>Scrap Kg/G</th>
                 <th>Description</th>
                 <th>Preferred Date</th>
                 <th>Status</th>
@@ -471,7 +477,10 @@ if (isset($_POST['add_documentation'])) {
     </button>
 </form>
 <!-- Modal -->
-<div class="modal fade" id="completeModal<?= $row['id'] ?>" tabindex="-1" aria-labelledby="completeModalLabel<?= $row['id'] ?>" aria-hidden="true">
+<!-- Complete Modal -->
+
+
+<!-- <div class="modal fade" id="completeModal<?= $row['id'] ?>" tabindex="-1" aria-labelledby="completeModalLabel<?= $row['id'] ?>" aria-hidden="true">
   <div class="modal-dialog">
     <form method="post">
       <input type="hidden" name="request_id" value="<?= $row['id'] ?>">
@@ -496,7 +505,77 @@ if (isset($_POST['add_documentation'])) {
       </div>
     </form>
   </div>
+</div> -->
+
+
+
+
+<?php
+$junk_type = $row['junk_type'];
+$price_result = mysqli_query($conn, "SELECT garbage_price FROM junk_price WHERE junk_type = '$junk_type' LIMIT 1");
+$price_data = mysqli_fetch_assoc($price_result);
+$garbage_price = $price_data ? (float)$price_data['garbage_price'] : 0;
+?>
+
+
+<!-- Modal -->
+
+<div class="modal fade" id="completeModal<?= $row['id'] ?>" tabindex="-1" aria-labelledby="completeModalLabel<?= $row['id'] ?>" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="post">
+      <input type="hidden" name="request_id" value="<?= $row['id'] ?>">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="completeModalLabel<?= $row['id'] ?>">Complete Request</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <?php
+        $junkTypes = explode(', ', $row['junk_type']);
+        ?>
+
+        <div class="modal-body">
+          <?php foreach ($junkTypes as $junkType): ?>
+            <?php
+              $junkTypeEscaped = mysqli_real_escape_string($conn, $junkType);
+              $priceRes = mysqli_query($conn, "SELECT garbage_price FROM junk_price WHERE junk_type = '$junkTypeEscaped' LIMIT 1");
+              $priceRow = mysqli_fetch_assoc($priceRes);
+              $price = $priceRow ? $priceRow['garbage_price'] : 0;
+            ?>
+            <div class="mb-3">
+              <label class="form-label"><?= htmlspecialchars($junkType) ?> (₱<?= $price ?>/kg)</label>
+              <input 
+                type="number" 
+                step="0.01" 
+                class="form-control junk-weight" 
+                name="weights[<?= htmlspecialchars($junkType) ?>]" 
+                data-price="<?= $price ?>" 
+                oninput="calculateTotalPaid(this)" 
+                placeholder="Enter weight for <?= htmlspecialchars($junkType) ?>">
+            </div>
+          <?php endforeach; ?>
+
+          <div class="mb-3">
+            <label class="form-label">Total Paid (₱)</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              name="paid" 
+              id="totalPaidInput<?= $row['id'] ?>" 
+              readonly 
+              style="background-color: #e9ecef;">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" name="complete_request" class="btn btn-success">Submit</button>
+        </div>
+      </div>
+    </form>
+  </div>
 </div>
+
+
 
 
 <!-- Generate Documentation Button -->
@@ -603,6 +682,40 @@ data-customer-id="<?= $row['customer_id'] ?>">
 <!-- Bootstrap JS and Popper.js -->
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+<script>
+function calculateTotalPaid(input) {
+  const modal = input.closest('.modal');
+  const inputs = modal.querySelectorAll('.junk-weight');
+  let total = 0;
+
+  inputs.forEach(input => {
+    const weight = parseFloat(input.value) || 0;
+    const price = parseFloat(input.dataset.price) || 0;
+    total += weight * price;
+  });
+
+  const totalPaidInput = modal.querySelector('[id^=totalPaidInput]');
+  if (totalPaidInput) {
+    totalPaidInput.value = total.toFixed(2);
+  }
+}
+</script>
+<script>
+function calculatePaid(input) {
+  const pricePerKilo = parseFloat(input.getAttribute('data-price')) || 0;
+  const weight = parseFloat(input.value) || 0;
+
+  // Calculate total
+  const totalPaid = (pricePerKilo * weight).toFixed(2);
+
+  // Find the corresponding paid input in the same modal
+  const paidInput = input.closest('.modal-body').querySelector('.paid-input');
+  if (paidInput) {
+    paidInput.value = totalPaid;
+  }
+}
+</script>
 
 <script>
 var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));

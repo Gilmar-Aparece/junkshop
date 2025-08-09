@@ -4,7 +4,7 @@ session_start();
 
 $collector_id = $_SESSION['collector_id'] ?? null;
 if (!$collector_id) {
-    header('Location: login.php');
+    header('Location: ./login.php');
     exit;
 }
 

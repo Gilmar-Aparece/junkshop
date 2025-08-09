@@ -110,7 +110,7 @@ $unread_count = $unread_data['unread_count'] ?? 0;
             </div>
             <ul class="nav">
                 <li class="nav-item"><a href="index.php?id=<?php echo $collector_id; ?>" class="nav-link"><i class="typcn typcn-map"></i> Home</a></li>
-                <li class="nav-item"><a href="pricing.php?id=<?php echo $collector_id; ?>" class="nav-link"><i class="typcn typcn-document"></i> Junk Pricing</a></li>
+                <li class="nav-item"><a href="pricing.php?id=<?php echo $collector_id; ?>" class="nav-link"><i class="typcn typcn-document"></i> Scrap Pricing</a></li>
                 <li class="nav-item">
                     <a href="#" class="nav-link with-sub"><i class="typcn typcn-attachment-outline"></i> Loan</a>
                     <div class="az-menu-sub">

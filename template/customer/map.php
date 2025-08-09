@@ -19,13 +19,13 @@ while ($row = mysqli_fetch_assoc($collectorResult)) {
 
 // Get junk price list
 $junkPrices = [];
-$priceQuery = "SELECT * FROM junk_price WHERE collector_id='$collector_id'";
+$priceQuery = "SELECT * FROM junk_price ";
 $priceResult = mysqli_query($conn, $priceQuery);
 while ($row = mysqli_fetch_assoc($priceResult)) {
     $junkPrices[] = $row;
 }
 
-if (isset($_POST['add_request']))  {
+if (isset($_POST['add_request'])) {
     $customer_id = mysqli_real_escape_string($conn, $_POST['customer_id']);
     $name = mysqli_real_escape_string($conn, $_POST['name']);
     $address = mysqli_real_escape_string($conn, $_POST['address']);
@@ -33,35 +33,149 @@ if (isset($_POST['add_request']))  {
     $description = mysqli_real_escape_string($conn, $_POST['description']);
     $preferred_date = mysqli_real_escape_string($conn, $_POST['preferred_date']);
     $collector_id = mysqli_real_escape_string($conn, $_POST['collector_id']);
+    $admin_id = mysqli_real_escape_string($conn, $_POST['admin_id']); // can be hidden input
 
+    if (!empty($_POST['junk_data'])) {
+        $junk_types = [];
+        $kls = [];
+        $prices = [];
+        $total_amount = 0;
 
-    // Extract junk_type, collector_id, and kl from the selected option
-    $junk_data = explode(',', $_POST['junk_data']);
-    $junk_type = mysqli_real_escape_string($conn, $junk_data[0]);
- 
-    $kl = mysqli_real_escape_string($conn, $junk_data[2]);
+        foreach ($_POST['junk_data'] as $junkDataRaw) {
+            list($junk_type, $kl, $price) = explode(',', $junkDataRaw);
+            $junk_types[] = trim($junk_type);
+            $kls[] = trim($kl);
+            $prices[] = trim($price);
 
-    // Insert into DB
-    $query = "INSERT INTO pickup_requests 
-        (customer_id, collector_id, name, address, contact_number, junk_type, description, preferred_date, kl, paid) 
-        VALUES 
-        ('$customer_id', '$collector_id', '$name', '$address', '$contact_number', '$junk_type', '$description', '$preferred_date', '$kl', 'Unpaid')";
+            // Total = kl * price
+            $total_amount += (float)$kl * (float)$price;
+        }
 
-        // Send collector_notification
-    $msg = "Pickup request from customer.";
-    mysqli_query($conn, "INSERT INTO customer_notification ( collector_id, message, customer_id) 
-                         VALUES ( $collector_id,  '$msg',  '$customer_id')");
+        $junk_type_str = mysqli_real_escape_string($conn, implode(', ', $junk_types));
+        //$kl_str = mysqli_real_escape_string($conn, implode(', ', $kls));
+        $kl_str = mysqli_real_escape_string($conn, implode(', ', $kls));
+        $price_str = mysqli_real_escape_string($conn, implode(', ', $prices));
+        $total_amount_str = number_format($total_amount, 2); // format as 2 decimal points
 
-    if (mysqli_query($conn, $query)) {
-        // echo "<script>alert('Request submitted successfully!');</script>";
-        $_SESSION['message'] = 'Request submitted successfully!';
+        // Now insert everything
+        $query = "INSERT INTO pickup_requests 
+            (customer_id, collector_id, admin_id, name, address, contact_number, junk_type, description, preferred_date, kl, paid) 
+            VALUES 
+            ('$customer_id', '$collector_id', '$admin_id', '$name', '$address', '$contact_number', '$junk_type_str', '$description', '$preferred_date', '1kl',  'Unpaid')";
+
+        if (mysqli_query($conn, $query)) {
+            $msg = "Pickup request from customer.";
+            mysqli_query($conn, "INSERT INTO customer_notification (collector_id, message, customer_id) 
+                                 VALUES ('$collector_id', '$msg', '$customer_id')");
+            $_SESSION['message'] = 'Request submitted successfully with total payment ₱' . $total_amount_str;
+        } else {
+            $_SESSION['message'] = 'Failed to submit request: ' . mysqli_error($conn);
+        }
     } else {
-        // echo "<script>alert('Error: " . mysqli_error($conn) . "');</script>";
-        $_SESSION['message'] = 'Failed to add Request.';
+        $_SESSION['message'] = 'Please select at least one junk type.';
     }
-    header("Location:request_pickup.php ");
-    
+
+    header("Location: request_pickup.php");
+    exit();
 }
+
+
+
+
+
+
+
+// if (isset($_POST['add_request'])) {
+//     $customer_id = mysqli_real_escape_string($conn, $_POST['customer_id']);
+//     $name = mysqli_real_escape_string($conn, $_POST['name']);
+//     $address = mysqli_real_escape_string($conn, $_POST['address']);
+//     $contact_number = mysqli_real_escape_string($conn, $_POST['contact_number']);
+//     $description = mysqli_real_escape_string($conn, $_POST['description']);
+//     $preferred_date = mysqli_real_escape_string($conn, $_POST['preferred_date']);
+//     $collector_id = mysqli_real_escape_string($conn, $_POST['collector_id']);
+//     $admin_id = mysqli_real_escape_string($conn, $_POST['admin_id']); // if you have this in hidden field
+
+//     if (!empty($_POST['junk_data'])) {
+//         $junk_types = [];
+//         $kls = [];
+
+//         foreach ($_POST['junk_data'] as $junkDataRaw) {
+//             list($junk_type, $kl) = explode(',', $junkDataRaw);
+//             $junk_types[] = trim($junk_type);
+//             $kls[] = trim($kl);
+//         }
+
+//         $junk_type_str = mysqli_real_escape_string($conn, implode(', ', $junk_types));
+//         $kl_str = mysqli_real_escape_string($conn, implode(', ', $kls));
+
+//         $query = "INSERT INTO pickup_requests 
+//             (customer_id, collector_id, admin_id, name, address, contact_number, junk_type, description, preferred_date, kl, paid) 
+//             VALUES 
+//             ('$customer_id', '$collector_id', '$admin_id', '$name', '$address', '$contact_number', '$junk_type_str', '$description', '$preferred_date', '$kl_str', 'Unpaid')";
+
+//         if (mysqli_query($conn, $query)) {
+//             // Notify collector
+//             $msg = "Pickup request from $name with multiple junk types.";
+//             mysqli_query($conn, "INSERT INTO customer_notification (collector_id, message, customer_id) 
+//                                  VALUES ('$collector_id', '$msg', '$customer_id')");
+
+//             $_SESSION['message'] = 'Request submitted successfully.';
+//         } else {
+//             $_SESSION['message'] = 'Failed to submit request: ' . mysqli_error($conn);
+//         }
+//     } else {
+//         $_SESSION['message'] = 'Please select at least one junk type.';
+//     }
+
+//     header("Location: request_pickup.php");
+//     exit();
+// }
+
+
+
+
+
+// if (isset($_POST['add_request']))  {
+//     $customer_id = mysqli_real_escape_string($conn, $_POST['customer_id']);
+//     $name = mysqli_real_escape_string($conn, $_POST['name']);
+//     $address = mysqli_real_escape_string($conn, $_POST['address']);
+//     $contact_number = mysqli_real_escape_string($conn, $_POST['contact_number']);
+//     $description = mysqli_real_escape_string($conn, $_POST['description']);
+//     $preferred_date = mysqli_real_escape_string($conn, $_POST['preferred_date']);
+//     $collector_id = mysqli_real_escape_string($conn, $_POST['collector_id']);
+
+
+//     if (!empty($_POST['junk_data'])) {
+//         foreach ($_POST['junk_data'] as $junkDataRaw) {
+//             $junk_data = explode(',', $junkDataRaw);
+//             $junk_type = mysqli_real_escape_string($conn, $junk_data[0]);
+//             $collector_id = mysqli_real_escape_string($conn, $junk_data[1]);
+//             $kl = mysqli_real_escape_string($conn, $junk_data[2]);
+    
+//             // Insert into DB
+//             $query = "INSERT INTO pickup_requests 
+//                 (customer_id, collector_id, name, address, contact_number, junk_type, description, preferred_date, kl, paid) 
+//                 VALUES 
+//                 ('$customer_id', '$collector_id', '$name', '$address', '$contact_number', '$junk_type', '$description', '$preferred_date', '$kl', 'Unpaid')";
+    
+//             // Notification
+//             $msg = "Pickup request from customer.";
+//             mysqli_query($conn, "INSERT INTO customer_notification (collector_id, message, customer_id) 
+//                                  VALUES ('$collector_id', '$msg', '$customer_id')");
+    
+//             mysqli_query($conn, $query);
+//         }
+    
+//         $_SESSION['message'] = 'Multiple requests submitted successfully!';
+//     } else {
+//         $_SESSION['message'] = 'No junk types selected.';
+//     }
+    
+//     header("Location: map.php");
+//     exit();
+    
+    
+// }
 
 
 ?>
@@ -350,16 +464,23 @@ if (isset($_POST['add_request']))  {
 
           
 
-            <label>Junk Type & Price per Kilo</label>
-<select name="junk_data" required>
-    <option value="">-- Select Junk Type --</option>
+            <label>Junk Types & Price per Kilo</label><br>
+<div style="max-height: 150px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
     <?php foreach ($junkPrices as $junk): ?>
-        <option 
-            value="<?= $junk['junk_type'] . ',' . $junk['collector_id'] . ',' . $junk['kl'] ?>">
-            <?= $junk['junk_type'] ?> - ₱<?= $junk['garbage_price'] ?>/kg
-        </option>
+        <div style="display: flex; align-items: center; margin-bottom: 8px;">
+            <input type="checkbox" 
+                   name="junk_data[]" 
+                   value="<?= $junk['junk_type'] . ',' . $junk['collector_id'] . ',' . $junk['kl'] ?>"
+                   style="    margin-right: -85px;width: 49%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 3px;">
+            <span><?= $junk['junk_type'] ?> - ₱<?= $junk['garbage_price'] ?>/kg</span>
+        </div>
     <?php endforeach; ?>
-</select>
+</div>
+
+
 
 
             <label>Description</label>

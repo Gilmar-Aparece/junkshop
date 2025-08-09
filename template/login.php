@@ -3,43 +3,39 @@ include './db/database.php';
 session_start();
 
 if (isset($_POST['submit'])) {
-
     $email = mysqli_real_escape_string($conn, $_POST['email']);
     $pass = mysqli_real_escape_string($conn, $_POST['password']);
-
-    $select_users = mysqli_query($conn, "SELECT * FROM `users` WHERE email = '$email' AND password = '$pass'") or die('query failed');
+    $select_users = mysqli_query($conn, "SELECT * FROM users WHERE email = '$email'") or die('Query failed');
 
     if (mysqli_num_rows($select_users) > 0) {
-
         $row = mysqli_fetch_assoc($select_users);
 
-        if ($row['block'] == 'yes') {
+       if ($row['block'] == 'yes') {
             $message[] = 'Your account has been deactivated by the admin.';
+        } elseif ($row['is_verified'] == 0) {
+            $_SESSION['verify_email'] = $email;
+            echo "<script>alert('Please verify your email first.'); window.location.href='verify.php';</script>";
         } else {
             $user_id = $row['id'];
-            $update_query = "UPDATE `users` SET status = 'activate' WHERE id = '$user_id'";
-            mysqli_query($conn, $update_query) or die('query failed');
+            mysqli_query($conn, "UPDATE users SET status = 'activate' WHERE id = '$user_id'");
 
             if ($row['user_type'] == 'customer') {
                 $_SESSION['customer_name'] = $row['name'];
                 $_SESSION['customer_email'] = $row['email'];
                 $_SESSION['customer_id'] = $row['id'];
-                
                 header('location:./customer/index.php');
             } elseif ($row['user_type'] == 'collector') {
                 $_SESSION['collector_name'] = $row['name'];
                 $_SESSION['collector_email'] = $row['email'];
                 $_SESSION['collector_id'] = $row['id'];
                 header('location:index.php');
-            }elseif ($row['user_type'] == 'admin') {
+            } elseif ($row['user_type'] == 'admin') {
                 $_SESSION['admin_name'] = $row['name'];
                 $_SESSION['admin_email'] = $row['email'];
                 $_SESSION['admin_id'] = $row['id'];
                 header('location:./admin/index.php');
-            }  
-			
+            }
         }
-
     } else {
         $message[] = 'Incorrect email or password!';
     }
@@ -84,6 +80,38 @@ if (isset($_POST['submit'])) {
             stroke: #555;
             stroke-width: 2;
         }
+        .floating-label {
+    position: relative;
+    margin-top: 15px;
+}
+
+.floating-label input {
+    width: 100%;
+    padding: 10px 5px 10px 0;
+    font-size: 16px;
+    border: none;
+    border-bottom: 2px solid #ccc;
+    background: transparent;
+    outline: none;
+}
+
+.floating-label label {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    color: #999;
+    font-size: 16px;
+    pointer-events: none;
+    transition: 0.3s ease all;
+}
+
+.floating-label input:focus + label,
+.floating-label input:not(:placeholder-shown) + label {
+    top: -15px;
+    font-size: 13px;
+    color:hsl(0, 0.00%, 0.00%);
+}
+
     </style>
 </head>
 <body>
@@ -114,9 +142,10 @@ if (isset($_POST['submit'])) {
                             <path d="M20 21v-2a4 4 0 0 0-3-3.87M4 21v-2a4 4 0 0 1 3-3.87M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
                         </svg>
                     </div>
-                    <div class="div">
-                        <h5>Email</h5>
-                        <input type="text" class="input" name="email" required>
+                    <div class="div floating-label">
+                        
+                        <input type="text" class="input" name="email" required placeholder=" ">
+                        <label>Email</label>
                     </div>
                 </div>
 
@@ -129,9 +158,10 @@ if (isset($_POST['submit'])) {
                             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                         </svg>
                     </div>
-                    <div class="div" style="position: relative;">
-                        <h5>Password</h5>
-                        <input type="password" class="input password-field" name="password" required>
+                    <div class="div floating-label" style="position: relative;">
+                        
+                        <input type="password" class="input password-field" name="password" required placeholder=" ">
+                        <label>Password</label>
                         <!-- Eye Icon -->
                         <span class="toggle-password">
                             <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
