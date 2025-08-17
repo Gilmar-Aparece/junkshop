@@ -21,6 +21,80 @@
             
                <div class="col-lg-5 mg-t-20 mg-lg-t-0">
                <a href="add_money.php" class="mt-3 mb-3 btn btn-primary">Add Money</a>
+               <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#reviewsModal">
+  View Reviews
+</button>
+<!-- Reviews Modal -->
+<div class="modal fade" id="reviewsModal" tabindex="-1" aria-labelledby="reviewsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="reviewsModalLabel">Customer Reviews</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+
+        <?php
+        $reviews_query = mysqli_query($conn, "
+            SELECT r.*, u.first_name, u.last_name, u.image, pr.junk_type
+            FROM reviews r
+            JOIN users u ON r.customer_id = u.id
+            JOIN pickup_requests pr ON r.request_id = pr.id
+            WHERE r.collector_id = '$collector_id'
+            ORDER BY r.created_at DESC
+        ") or die('Query failed');
+
+        if (mysqli_num_rows($reviews_query) > 0):
+            while ($rev = mysqli_fetch_assoc($reviews_query)):
+                $reviewer_name = htmlspecialchars($rev['first_name'] . ' ' . $rev['last_name']);
+                $reviewer_image = !empty($rev['image']) ? $rev['image'] : '1.png';
+                $junk_type = htmlspecialchars($rev['junk_type']);
+                $rating = (int)$rev['rating'];
+                $review_text = nl2br(htmlspecialchars($rev['review_text']));
+                $date = date("M j, Y g:i A", strtotime($rev['created_at']));
+        ?>
+            <!-- Review Card -->
+            <div class="card mb-3 shadow-sm">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                  <img src="images/<?= $reviewer_image ?>" alt="Reviewer"
+                       style="width:50px; height:50px; border-radius:50%; object-fit:cover; margin-right:10px;">
+                  <div>
+                    <h6 class="mb-0"><?= $reviewer_name ?></h6>
+                    <small class="text-muted"><?= $date ?></small>
+                  </div>
+                </div>
+
+                <!-- Stars -->
+                <div class="mb-2">
+                  <?php for ($i=1; $i<=5; $i++): ?>
+                    <?php if ($i <= $rating): ?>
+                      <span style="color: gold; font-size:18px;">★</span>
+                    <?php else: ?>
+                      <span style="color: #ccc; font-size:18px;">☆</span>
+                    <?php endif; ?>
+                  <?php endfor; ?>
+                </div>
+
+                <p class="mb-1"><strong>Scrap Type:</strong> <?= $junk_type ?></p>
+                <p class="mb-0"><?= $review_text ?></p>
+              </div>
+            </div>
+        <?php
+            endwhile;
+        else:
+            echo "<p class='text-center text-muted'>No reviews yet.</p>";
+        endif;
+        ?>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
               <div class="row row-sm">
                 <div class="col-sm-6">
                   <div class="card card-dashboard-two">

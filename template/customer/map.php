@@ -25,6 +25,27 @@ while ($row = mysqli_fetch_assoc($priceResult)) {
     $junkPrices[] = $row;
 }
 
+
+
+if (isset($_GET['collector_id'])) {
+    $collector_id = intval($_GET['collector_id']);
+
+    $sql = "SELECT r.rating, r.review_text, r.created_at, u.first_name 
+            FROM reviews r
+            JOIN users u ON r.customer_id = u.id
+            WHERE r.collector_id = $collector_id
+            ORDER BY r.created_at DESC";
+
+    $result = mysqli_query($conn, $sql);
+    $reviews = [];
+
+    while ($row = mysqli_fetch_assoc($result)) {
+        $reviews[] = $row;
+    }
+
+    echo json_encode($reviews);
+}
+
 if (isset($_POST['add_request'])) {
     $customer_id = mysqli_real_escape_string($conn, $_POST['customer_id']);
     $name = mysqli_real_escape_string($conn, $_POST['name']);
@@ -508,13 +529,21 @@ if (isset($_POST['add_request'])) {
     border-radius: 10px; 
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); 
     text-align:start;
-    width: 300px;
+    width: 350px;
     font-family: Arial, sans-serif;
     z-index: 1000;
+    max-height: 80vh;
+    overflow-y: auto;
 ">
     <h3 style="margin-top: 0; color: #333;">Collector Info</h3>
     <p><strong>Name:</strong> <span id="infoName" style="color: #555;"></span></p>
     <p><strong>Address:</strong> <span id="infoAddress" style="color: #555;"></span></p>
+
+    <h4 style="margin-top:20px;">Customer Reviews</h4>
+    <div id="reviewsContainer" style="border-top:1px solid #ddd; padding-top:10px;">
+        <p style="color:#777;">Loading reviews...</p>
+    </div>
+
     <div style="text-align: right; margin-top: 20px;">
         <button onclick="closeInfoModal()" style="
             background-color: #dc3545; 
@@ -536,11 +565,54 @@ if (isset($_POST['add_request'])) {
     z-index: 999;
 "></div>
 <script>
-function showInfoModal(name, address) {
-    document.getElementById('infoName').textContent = name;
-    document.getElementById('infoAddress').textContent = address;
-    document.getElementById('infoModal').style.display = 'block';
+
+
+
+function showInfoModal(name, address, collectorId) {
+    document.getElementById("infoName").innerText = name;
+    document.getElementById("infoAddress").innerText = address;
+    document.getElementById("infoModal").style.display = "block";
+    document.getElementById("modalOverlay").style.display = "block";
+
+    const reviewsContainer = document.getElementById("reviewsContainer");
+    reviewsContainer.innerHTML = "<p style='color:#777;'>Loading reviews...</p>";
+
+    // Fetch reviews from backend
+    fetch("get_reviews.php?collector_id=" + collectorId)
+        .then(res => res.json())
+        .then(data => {
+            if (data.length === 0) {
+                reviewsContainer.innerHTML = "<p style='color:#999;'>No reviews yet.</p>";
+                return;
+            }
+
+            reviewsContainer.innerHTML = "";
+            data.forEach(review => {
+                let stars = "⭐".repeat(review.rating) + "☆".repeat(5 - review.rating);
+                let reviewDiv = document.createElement("div");
+                reviewDiv.style.marginBottom = "12px";
+                reviewDiv.innerHTML = `
+                    <p style="margin:0; color:#333;"><strong>${review.first_name}</strong> 
+                    <span style="color:gold;">${stars}</span></p>
+                    <p style="margin:5px 0; color:#555;">${review.review_text}</p>
+                    <small style="color:#888;">${review.created_at}</small>
+                `;
+                reviewsContainer.appendChild(reviewDiv);
+            });
+        })
+        .catch(err => {
+            reviewsContainer.innerHTML = "<p style='color:red;'>Error loading reviews.</p>";
+            console.error(err);
+        });
 }
+
+
+
+// function showInfoModal(name, address) {
+//     document.getElementById('infoName').textContent = name;
+//     document.getElementById('infoAddress').textContent = address;
+//     document.getElementById('infoModal').style.display = 'block';
+// }
 
 function closeInfoModal() {
     document.getElementById('infoModal').style.display = 'none';
@@ -695,11 +767,12 @@ collectors.forEach(collector => {
                 style="background-color: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
                 Request Pickup
             </button>
-            <button 
-                onclick="showInfoModal('${collector.first_name}', '${collector.address}')"
-                style="background-color: #218838; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
-                Show Info
-            </button>
+           <button 
+    onclick="showInfoModal('${collector.first_name}', '${collector.address}', ${collector.id})"
+    style="background-color: #218838; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+    Show Info
+</button>
+
         </div>
     </div>
 `);
@@ -709,24 +782,68 @@ collectors.forEach(collector => {
         .catch(err => console.error(err));
 });
 
-function showInfoModal(name, address) {
-    const modal = document.getElementById("infoModal");
+
+
+
+function showInfoModal(name, address, collectorId) {
     document.getElementById("infoName").innerText = name;
     document.getElementById("infoAddress").innerText = address;
-    modal.style.display = "block";
+    document.getElementById("infoModal").style.display = "block";
+    document.getElementById("modalOverlay").style.display = "block";
+
+    const reviewsContainer = document.getElementById("reviewsContainer");
+    reviewsContainer.innerHTML = "<p style='color:#777;'>Loading reviews...</p>";
+
+    // Fetch reviews from backend
+    fetch("get_reviews.php?collector_id=" + collectorId)
+        .then(res => res.json())
+        .then(data => {
+            if (data.length === 0) {
+                reviewsContainer.innerHTML = "<p style='color:#999;'>No reviews yet.</p>";
+                return;
+            }
+
+            reviewsContainer.innerHTML = "";
+            data.forEach(review => {
+                let stars = "⭐".repeat(review.rating) + "☆".repeat(5 - review.rating);
+                let reviewDiv = document.createElement("div");
+                reviewDiv.style.marginBottom = "12px";
+                reviewDiv.innerHTML = `
+                    <p style="margin:0; color:#333;"><strong>${review.first_name}</strong> 
+                    <span style="color:gold;">${stars}</span></p>
+                    <p style="margin:5px 0; color:#555;">${review.review_text}</p>
+                    <small style="color:#888;">${review.created_at}</small>
+                `;
+                reviewsContainer.appendChild(reviewDiv);
+            });
+        })
+        .catch(err => {
+            reviewsContainer.innerHTML = "<p style='color:red;'>Error loading reviews.</p>";
+            console.error(err);
+        });
 }
+
+
+
+
+// function showInfoModal(name, address) {
+//     const modal = document.getElementById("infoModal");
+//     document.getElementById("infoName").innerText = name;
+//     document.getElementById("infoAddress").innerText = address;
+//     modal.style.display = "block";
+// }
 
 function closeInfoModal() {
     document.getElementById("infoModal").style.display = "none";
 }
 
 
-function showInfoModal(name, address) {
-    document.getElementById("infoName").innerText = name;
-    document.getElementById("infoAddress").innerText = address;
-    document.getElementById("infoModal").style.display = "block";
-    document.getElementById("modalOverlay").style.display = "block";
-}
+// function showInfoModal(name, address) {
+//     document.getElementById("infoName").innerText = name;
+//     document.getElementById("infoAddress").innerText = address;
+//     document.getElementById("infoModal").style.display = "block";
+//     document.getElementById("modalOverlay").style.display = "block";
+// }
 
 function closeInfoModal() {
     document.getElementById("infoModal").style.display = "none";

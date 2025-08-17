@@ -41,7 +41,20 @@ if (mysqli_num_rows($select) > 0) {
     $fetch = mysqli_fetch_assoc($select);
 }
 
+if(isset($_POST['submit_review'])){
+    $customer_id = $_SESSION['customer_id'];
+    $request_id = $_POST['request_id'];
+    $collector_id = $_POST['collector_id'];
+    $rating = (int)$_POST['rating'];
+    $review_text = mysqli_real_escape_string($conn, $_POST['review_text']);
 
+    $insert = "INSERT INTO reviews (request_id, customer_id, collector_id, rating, review_text) 
+               VALUES ('$request_id', '$customer_id', '$collector_id', '$rating', '$review_text')";
+    mysqli_query($conn, $insert) or die(mysqli_error($conn));
+
+   
+    exit();
+}
 
 
 // Pagination + Search
@@ -136,22 +149,111 @@ $fetch = mysqli_fetch_assoc($select);
 if (mysqli_num_rows($get_requests) > 0) {
     while ($row = mysqli_fetch_assoc($get_requests)) {
         $collector_name = !empty($row['first_name']) ? $row['first_name'] . ' ' . $row['last_name'] : 'Unassigned';
+        $requestId = $row['id'];
+        $collectorId = $row['collector_id'];
+
         echo "<tr>
-            <td>{$row['id']}</td>
-            <td>{$row['junk_type']}</td>
-            <td>{$row['description']}</td>
-            <td>" . date('M d, h:i A', strtotime($row['preferred_date'])) . "</td>
-            <td>
-                <span class='badge bg-".(
-                    $row['status'] === 'Pending' ? 'warning text-dark' :
-                    ($row['status'] === 'Approved' ? 'success' : 'danger')
-                )."'>{$row['status']}</span>
-            </td>
-            <td>{$collector_name}</td>
-            <td>
-                <a href='customer_requests.php?delete={$row['id']}' class='btn btn-sm btn-danger' onclick=\"return confirm('Delete this request?')\">Delete</a>
-            </td>
-        </tr>";
+    <td>{$requestId}</td>
+    <td>{$row['junk_type']}</td>
+    <td>{$row['description']}</td>
+    <td>" . date('M d, h:i A', strtotime($row['preferred_date'])) . "</td>
+    <td>
+        <span class='badge bg-".(
+            $row['status'] === 'Pending' ? 'warning text-dark' :
+            ($row['status'] === 'Approved' ? 'success' : 'danger')
+        )."'>{$row['status']}</span>
+    </td>
+    <td>{$collector_name}</td>
+    <td>
+        <a href='customer_requests.php?delete={$requestId}' class='btn btn-sm btn-danger' onclick=\"return confirm('Delete this request?')\">Delete</a>
+";
+
+if ($row['status'] === 'Pending') {
+    echo "<button class='btn btn-sm btn-secondary' disabled>Add Review</button>";
+} else {
+    echo "<button class='btn btn-sm btn-primary' data-bs-toggle='modal' data-bs-target='#reviewModal{$requestId}'>Add Review</button>";
+}
+echo " <button class='btn btn-sm btn-info' data-bs-toggle='modal' data-bs-target='#viewReviewsModal{$requestId}'>View Reviews</button>";
+
+echo "</td></tr>";
+
+// Fetch reviews for this request
+$reviews_query = mysqli_query($conn, "
+    SELECT r.*, u.first_name, u.last_name 
+    FROM reviews r 
+    JOIN users u ON r.customer_id = u.id 
+    WHERE r.request_id = '{$requestId}'
+");
+
+echo "
+<div class='modal fade' id='viewReviewsModal{$requestId}' tabindex='-1'>
+  <div class='modal-dialog modal-lg'>
+    <div class='modal-content'>
+      <div class='modal-header'>
+        <h5 class='modal-title'>Reviews for Request #{$requestId}</h5>
+        <button type='button' class='btn-close' data-bs-dismiss='modal'></button>
+      </div>
+      <div class='modal-body'>";
+
+if (mysqli_num_rows($reviews_query) > 0) {
+    while ($rev = mysqli_fetch_assoc($reviews_query)) {
+        echo "<div class='border p-2 mb-2'>
+                <strong>{$rev['first_name']} {$rev['last_name']}</strong> 
+                <span class='text-warning'>" . str_repeat("&#9733;", $rev['rating']) . "</span>
+                <p>{$rev['review_text']}</p>
+                <small class='text-muted'>".date('M d, Y h:i A', strtotime($rev['created_at']))."</small>
+              </div>";
+    }
+} else {
+    echo "<p class='text-muted'>No reviews yet.</p>";
+}
+
+echo "   </div>
+      <div class='modal-footer'>
+        <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
+      </div>
+    </div>
+  </div>
+</div>";
+
+        // ✅ Individual Modal for this request
+        echo "
+        <div class='modal fade' id='reviewModal{$requestId}' tabindex='-1'>
+          <div class='modal-dialog'>
+            <form method='POST'>
+              <div class='modal-content'>
+                <div class='modal-header'>
+                  <h5 class='modal-title'>Add Review for Request #{$requestId}</h5>
+                  <button type='button' class='btn-close' data-bs-dismiss='modal'></button>
+                </div>
+                <div class='modal-body'>
+                  <input type='hidden' name='request_id' value='{$requestId}'>
+                  <input type='hidden' name='collector_id' value='{$collectorId}'>
+
+                  <div class='mb-3'>
+                    <label class='form-label'>Rating</label><br>
+                    <div class='star-rating' id='stars-{$requestId}'>
+                      <span data-value='1'>&#9733;</span>
+                      <span data-value='2'>&#9733;</span>
+                      <span data-value='3'>&#9733;</span>
+                      <span data-value='4'>&#9733;</span>
+                      <span data-value='5'>&#9733;</span>
+                    </div>
+                    <input type='hidden' name='rating' id='rating-{$requestId}' required>
+                  </div>
+
+                  <div class='mb-3'>
+                    <label class='form-label'>Review</label>
+                    <textarea class='form-control' name='review_text' rows='3' required></textarea>
+                  </div>
+                </div>
+                <div class='modal-footer'>
+                  <button type='submit' name='submit_review' class='btn btn-success'>Submit</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>";
     }
 } else {
     echo "<tr><td colspan='7' class='text-center'>No requests found.</td></tr>";
@@ -159,7 +261,11 @@ if (mysqli_num_rows($get_requests) > 0) {
 ?>
 </tbody>
 
+
 </table>
+<!-- Review Modal -->
+
+
     <!-- Pagination -->
 <nav class="mt-3">
         <ul class="pagination">
@@ -179,4 +285,26 @@ if (mysqli_num_rows($get_requests) > 0) {
         </ul>
     </nav>
 </div>
+<script>
+document.querySelectorAll('.star-rating').forEach(function(starGroup) {
+  let stars = starGroup.querySelectorAll('span');
+  let inputId = starGroup.id.replace('stars-', 'rating-');
+
+  stars.forEach(function(star, index) {
+    star.addEventListener('click', function() {
+      let value = this.getAttribute('data-value');
+      document.getElementById(inputId).value = value;
+
+      // reset stars
+      stars.forEach(s => s.style.color = 'black');
+      // highlight selected
+      for (let i = 0; i < value; i++) {
+        stars[i].style.color = 'gold';
+      }
+    });
+  });
+});
+</script>
+
+
 <?php @include("footer.php"); ?>
