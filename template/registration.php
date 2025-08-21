@@ -277,9 +277,17 @@ $mail->Body = '
     <img class="wave" src="ban.png">
     <div class="container">
         <div class="img">
-            <img src="https://raw.githubusercontent.com/sefyudem/Responsive-Login-Form/master/img/bg.svg">
+            <img src="https://raw.githubusercontent.com/sefyudem/Responsive-Login-Form/master/img/bg.svg" style="    width: 500px;
+    top: 393px;
+    position: fixed;">
         </div>
-        <div class="login-content">
+        <div class="login-content" style="display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    text-align: center;
+    height: 200vh;
+    overflow-y: auto;
+    overflow-x: hidden;">
             <form method="post" enctype="multipart/form-data">
                 <img src="https://raw.githubusercontent.com/sefyudem/Responsive-Login-Form/master/img/avatar.svg">
                 <h2 class="title">Welcome</h2>
@@ -419,87 +427,79 @@ $mail->Body = '
             }
         });
     });
-</script>
+   
+const addressInput = document.getElementById("address_search");
+const resultsDiv = document.getElementById("address_results");
 
-    <script>
-      const addressInput = document.getElementById("address_search");
-    const resultsDiv = document.getElementById("address_results");
+const buenavistaBarangays = [
+    "Anonang", "Asinan", "Bago", "Baluarte", "Bantuan", "Bato", "Bonotbonot", "Bugaong",
+    "Cambuhat", "Cambus-oc", "Cangawa", "Cantomugcad", "Cantores", "Cantuba", "Catigbian", "Cawag",
+    "Cruz", "Dait", "Eastern Cabul-an", "Hunan", "Lapacan Norte", "Lapacan Sur", "Lubang", "Lusong (Plateau)",
+    "Magkaya", "Merryland", "Nueva Granada", "Nueva Montana", "Overland", "Panghagban", "Poblacion",
+    "Puting Bato", "Rufo Hill", "Sweetland", "Western Cabul-an"
+];
 
-    const buenavistaBarangays = [
-        "Anonang", "Asinan", "Bago", "Baluarte", "Bantuan", "Bato", "Bonotbonot", "Bugaong",
-        "Cambuhat", "Cambus-oc", "Cangawa", "Cantomugcad", "Cantores", "Cantuba", "Catigbian", "Cawag",
-        "Cruz", "Dait", "Eastern Cabul-an", "Hunan", "Lapacan Norte", "Lapacan Sur", "Lubang", "Lusong (Plateau)",
-        "Magkaya", "Merryland", "Nueva Granada", "Nueva Montana", "Overland", "Panghagban", "Poblacion",
-        "Puting Bato", "Rufo Hill", "Sweetland", "Western Cabul-an"
-    ];
+addressInput.addEventListener("input", function () {
+    let query = this.value.trim().toLowerCase();
+    resultsDiv.innerHTML = "";
+    resultsDiv.style.display = "none";
 
-    addressInput.addEventListener("input", function () {
-        let query = this.value.trim().toLowerCase();
-        resultsDiv.innerHTML = "";
-        resultsDiv.style.display = "none";
+    if (query.length >= 1) {
+        // Search inside Buenavista barangays
+        const matchedBarangays = buenavistaBarangays.filter(barangay =>
+            barangay.toLowerCase().includes(query)
+        );
 
-        if (query.length >= 1) {
-            // Case 1: User searches "buenavista" or "b"
-            if (query === "buenavista" || query === "b") {
-                resultsDiv.style.display = "block";
-                buenavistaBarangays.forEach(barangay => {
-                    const div = document.createElement("div floating-label");
-                    div.textContent = barangay + ", Buenavista, Bohol";
-                    div.style.padding = "5px";
-                    div.style.cursor = "pointer";
-                    div.addEventListener("click", function () {
-                        addressInput.value = this.textContent;
-                        resultsDiv.innerHTML = "";
-                        resultsDiv.style.display = "none";
-                    });
-                    resultsDiv.appendChild(div);
+        if (matchedBarangays.length > 0) {
+            resultsDiv.style.display = "block";
+            matchedBarangays.forEach(barangay => {
+                const div = document.createElement("div");
+                div.textContent = barangay + ", Buenavista, Bohol";
+                div.style.padding = "5px";
+                div.style.cursor = "pointer";
+                div.addEventListener("click", function () {
+                    addressInput.value = this.textContent;
+                    resultsDiv.innerHTML = "";
+                    resultsDiv.style.display = "none";
                 });
-            } else {
-                // Case 2: Use OpenStreetMap Nominatim search
-                fetch("https://nominatim.openstreetmap.org/search?format=json&q=" + encodeURIComponent(query) + "&addressdetails=1&limit=10&countrycodes=ph")
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.length > 0) {
-                            resultsDiv.style.display = "block";
-                            data.forEach(result => {
-                                const div = document.createElement("div floating-label");
-                                div.textContent = result.display_name;
-                                div.style.padding = "5px";
-                                div.style.cursor = "pointer";
-                                div.addEventListener("click", function () {
-                                    addressInput.value = this.textContent;
-                                    resultsDiv.innerHTML = "";
-                                    resultsDiv.style.display = "none";
-                                });
-                                resultsDiv.appendChild(div);
+                resultsDiv.appendChild(div);
+            });
+        } else {
+            // If not found in barangays, search from OpenStreetMap
+            fetch("https://nominatim.openstreetmap.org/search?format=json&q=" + encodeURIComponent(query) + "&addressdetails=1&limit=10&countrycodes=ph")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        resultsDiv.style.display = "block";
+                        data.forEach(result => {
+                            const div = document.createElement("div");
+                            div.textContent = result.display_name;
+                            div.style.padding = "5px";
+                            div.style.cursor = "pointer";
+                            div.addEventListener("click", function () {
+                                addressInput.value = this.textContent;
+                                resultsDiv.innerHTML = "";
+                                resultsDiv.style.display = "none";
                             });
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Error fetching data:", error);
-                    });
-            }
+                            resultsDiv.appendChild(div);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching data:", error);
+                });
         }
-    });
+    }
+});
 
-    // Hide results if clicking outside
-    document.addEventListener("click", function (event) {
-        if (!addressInput.contains(event.target) && !resultsDiv.contains(event.target)) {
-            resultsDiv.style.display = "none";
-        }
-    });
-
-    // Input animation (optional)
-    const inputs = document.querySelectorAll(".input");
-    inputs.forEach(input => {
-        input.addEventListener("focus", () => input.parentNode.parentNode.classList.add("focus"));
-        input.addEventListener("blur", () => {
-            if (input.value === "") input.parentNode.parentNode.classList.remove("focus");
-        });
-    });
-
-  
+// Hide results if clicking outside
+document.addEventListener("click", function (event) {
+    if (!addressInput.contains(event.target) && !resultsDiv.contains(event.target)) {
+        resultsDiv.style.display = "none";
+    }
+});
 </script>
+
 
 </body>
 </html>

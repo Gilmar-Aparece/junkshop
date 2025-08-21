@@ -5,7 +5,7 @@ session_start();
 if (isset($_POST['submit'])) {
     $email = mysqli_real_escape_string($conn, $_POST['email']);
     $pass = mysqli_real_escape_string($conn, $_POST['password']);
-    $select_users = mysqli_query($conn, "SELECT * FROM users WHERE email = '$email'") or die('Query failed');
+    $select_users = mysqli_query($conn, "SELECT * FROM users WHERE email = '$email' && password = '$pass'") or die('Query failed');
 
     if (mysqli_num_rows($select_users) > 0) {
         $row = mysqli_fetch_assoc($select_users);
@@ -183,34 +183,36 @@ if (isset($_POST['submit'])) {
     </div>
 
     <script>
-        // Input focus effect
-        const inputs = document.querySelectorAll(".input");
-        inputs.forEach(input => {
-            input.addEventListener("focus", function () {
-                this.parentNode.parentNode.classList.add("focus");
-            });
-            input.addEventListener("blur", function () {
-                if (this.value === "") {
-                    this.parentNode.parentNode.classList.remove("focus");
-                }
-            });
+    // Input focus effect
+    const inputs = document.querySelectorAll(".input");
+    inputs.forEach(input => {
+        input.addEventListener("focus", function () {
+            this.parentNode.parentNode.classList.add("focus");
         });
-
-        // Password toggle
-        document.querySelectorAll('.toggle-password').forEach(icon => {
-            icon.addEventListener('click', function () {
-                const input = this.previousElementSibling;
-                const eyeIcon = this.querySelector('.eye-icon');
-
-                if (input.type === "password") {
-                    input.type = "text";
-                    eyeIcon.classList.add('hide');
-                } else {
-                    input.type = "password";
-                    eyeIcon.classList.remove('hide');
-                }
-            });
+        input.addEventListener("blur", function () {
+            if (this.value === "") {
+                this.parentNode.parentNode.classList.remove("focus");
+            }
         });
-    </script>
+    });
+
+    // Password toggle
+    document.querySelectorAll('.toggle-password').forEach(icon => {
+        icon.addEventListener('click', function () {
+            // Select the input inside the same parent (div.floating-label)
+            const input = this.parentElement.querySelector('.password-field');
+            const eyeIcon = this.querySelector('.eye-icon');
+
+            if (input.type === "password") {
+                input.type = "text";
+                eyeIcon.classList.add('hide');   // eye half-closed
+            } else {
+                input.type = "password";
+                eyeIcon.classList.remove('hide'); // eye open
+            }
+        });
+    });
+</script>
+
 </body>
 </html>
