@@ -111,7 +111,27 @@ if (isset($_POST['submit'])) {
     font-size: 13px;
     color:hsl(0, 0.00%, 0.00%);
 }
+.message {
+    border: 1px solid red;
+    background-color: #ffe6e6; /* light pink background */
+    color: red;
+    padding: 10px 15px;
+    margin: 10px 0;
+    border-radius: 5px;
+    position: relative;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
 
+.message i {
+    cursor: pointer;
+    font-style: normal;
+    font-weight: bold;
+    padding-left: 10px;
+    color: red;
+}
     </style>
 </head>
 <body>
